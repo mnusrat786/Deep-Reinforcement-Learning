@@ -1,50 +1,47 @@
-from matplotlib.backends.backend_pdf import PdfPages
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
 import matplotlib.pyplot as plt
-from utils import plot_policy, plot_heatmap, plot_visits
+import os
 
-def generate_pdf_report(agent, total_rewards, trajectory, algo, episodes):
-    with PdfPages("RL_Report.pdf") as pdf:
-        # Title Page
-        fig1 = plt.figure(figsize=(8, 6))
-        fig1.clf()
-        fig1.text(0.5, 0.8, "RL Simulator Report", ha='center', fontsize=20)
-        fig1.text(0.5, 0.6, f"Algorithm: {algo}", ha='center', fontsize=14)
-        fig1.text(0.5, 0.55, f"Episodes Trained: {episodes}", ha='center', fontsize=12)
-        pdf.savefig(fig1)
-        plt.close(fig1)
+def generate_pdf_report(agent, rewards, trajectory, algo, episodes, gif_path="agent_walk.gif"):
+    doc = SimpleDocTemplate("RL_Report.pdf", pagesize=letter)
+    styles = getSampleStyleSheet()
+    elements = []
 
-        # Policy Grid
-        fig2 = plot_policy(agent.Q)
-        pdf.savefig(fig2)
-        plt.close(fig2)
+    elements.append(Paragraph("Reinforcement Learning Report", styles['Title']))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph(f"Algorithm: {algo}", styles['Normal']))
+    elements.append(Paragraph(f"Episodes Trained: {episodes}", styles['Normal']))
+    elements.append(Spacer(1, 12))
 
-        # Q-Value Heatmap
-        fig3 = plot_heatmap(agent.Q)
-        pdf.savefig(fig3)
-        plt.close(fig3)
+    # Reward plot
+    fig, ax = plt.subplots()
+    ax.plot(rewards)
+    ax.set_title("Reward per Episode")
+    ax.set_xlabel("Episode")
+    ax.set_ylabel("Total Reward")
+    plt.grid(True)
+    fig.savefig("reward_plot.png")
+    plt.close(fig)
 
-        # State Visit Frequency
-        fig4 = plot_visits(agent.visits)
-        pdf.savefig(fig4)
-        plt.close(fig4)
+    elements.append(Paragraph("Reward Curve:", styles['Heading2']))
+    elements.append(Image("reward_plot.png", width=400, height=200))
+    elements.append(Spacer(1, 12))
 
-        # Reward over Time
-        fig5 = plt.figure(figsize=(8, 3))
-        plt.plot(total_rewards)
-        plt.xlabel("Episode")
-        plt.ylabel("Total Reward")
-        plt.grid(True)
-        plt.title("Reward vs Episode")
-        pdf.savefig(fig5)
-        plt.close(fig5)
+    # Agent trajectory
+    elements.append(Paragraph("Agent Trajectory (Last Episode):", styles['Heading2']))
+    traj_text = " → ".join([chr(65 + s[0]*4 + s[1]) for s in trajectory])
+    elements.append(Paragraph(traj_text, styles['Code']))
+    elements.append(Spacer(1, 12))
 
-        # Last Episode Path
-        fig6 = plt.figure()
-        fig6.clf()
-        path_str = " → ".join([chr(65 + s[0]*4 + s[1]) for s in trajectory])
-        fig6.text(0.5, 0.7, "Last Episode Path", ha='center', fontsize=16)
-        fig6.text(0.5, 0.5, path_str, ha='center', fontsize=12)
-        pdf.savefig(fig6)
-        plt.close(fig6)
+    # GIF snapshot (first frame)
+    if os.path.exists(gif_path):
+        elements.append(Paragraph("Agent Walk (GIF snapshot):", styles['Heading2']))
+        elements.append(Image(gif_path, width=200, height=200))
 
-    print("✅ PDF Report saved as: RL_Report.pdf")
+    doc.build(elements)
+
+    # Clean temp
+    if os.path.exists("reward_plot.png"):
+        os.remove("reward_plot.png")

@@ -1,5 +1,57 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import imageio
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+
+def draw_grid_frame(path, grid_size=(4, 4), holes=[(1, 1), (1, 3), (3, 0)], goal=(3, 3), episode=None):
+    fig, ax = plt.subplots(figsize=(4, 4))
+    ax.set_xticks(np.arange(grid_size[1]+1)-0.5, minor=True)
+    ax.set_yticks(np.arange(grid_size[0]+1)-0.5, minor=True)
+    ax.grid(which="minor", color="black", linestyle='-', linewidth=1)
+    ax.tick_params(which="minor", bottom=False, left=False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    for i in range(grid_size[0]):
+        for j in range(grid_size[1]):
+            label = chr(65 + i * grid_size[1] + j)
+            color = "white"
+            if (i, j) in holes:
+                color = "#ffcccc"
+            elif (i, j) == goal:
+                color = "#ccffcc"
+            ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, facecolor=color))
+            ax.text(j, i, label, ha='center', va='center', fontsize=12)
+
+    for i, (x, y) in enumerate(path):
+        ax.add_patch(plt.Circle((y, x), 0.3, color='blue', alpha=0.3 + 0.5 * (i/len(path))))
+
+    if path:
+        x, y = path[-1]
+        ax.add_patch(plt.Circle((y, x), 0.3, color='red'))
+
+    ax.set_xlim(-0.5, grid_size[1]-0.5)
+    ax.set_ylim(-0.5, grid_size[0]-0.5)
+    ax.invert_yaxis()
+
+    if episode is not None:
+        ax.set_title(f"Episode {episode}", fontsize=14)
+
+    return fig
+
+
+def save_agent_walk_gif(trajectory, filename="agent_walk.gif", episode=None):
+    frames = []
+    for i in range(1, len(trajectory) + 1):
+        fig = draw_grid_frame(trajectory[:i], episode=episode)
+        canvas = FigureCanvas(fig)
+        canvas.draw()
+        image = np.frombuffer(canvas.buffer_rgba(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (4,))
+        frames.append(image)
+        plt.close(fig)
+    imageio.mimsave(filename, frames, duration=0.5)
+
 
 def plot_policy(Q, grid_size=4):
     fig, ax = plt.subplots(figsize=(6, 6))
