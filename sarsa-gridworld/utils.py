@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio
+import torch
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 def draw_grid_frame(path, grid_size=(4, 4), holes=[(1, 1), (1, 3), (3, 0)], goal=(3, 3), episode=None):
@@ -39,7 +40,6 @@ def draw_grid_frame(path, grid_size=(4, 4), holes=[(1, 1), (1, 3), (3, 0)], goal
 
     return fig
 
-
 def save_agent_walk_gif(trajectory, filename="agent_walk.gif", episode=None):
     frames = []
     for i in range(1, len(trajectory) + 1):
@@ -51,7 +51,6 @@ def save_agent_walk_gif(trajectory, filename="agent_walk.gif", episode=None):
         frames.append(image)
         plt.close(fig)
     imageio.mimsave(filename, frames, duration=0.5)
-
 
 def plot_policy(Q, grid_size=4):
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -124,4 +123,20 @@ def plot_visits(visits):
     c = ax.imshow(counts, cmap='YlGn', interpolation='nearest')
     plt.colorbar(c)
     ax.set_title("State Visit Frequency")
+    return fig
+
+def plot_dqn_qvalues(agent_model, actions):
+    q_grid = np.zeros((4, 4))
+    with torch.no_grad():
+        for i in range(4):
+            for j in range(4):
+                input_tensor = torch.FloatTensor([i, j])
+                q_vals = agent_model(input_tensor)
+                best_action_val = torch.max(q_vals).item()
+                q_grid[i, j] = best_action_val
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(q_grid, cmap="coolwarm")
+    ax.set_title("DQN Q-Value Heatmap (Best Actions)")
+    plt.colorbar(im)
     return fig
