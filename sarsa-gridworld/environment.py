@@ -26,12 +26,12 @@ class GridWorld:
 
         self.state = (x, y)
 
-        # Termination conditions
         if self.state in self.holes:
             return self.state, -50, True
         elif self.state == self.goal:
             return self.state, 50, True
         elif self.steps >= self.max_steps:
-            return self.state, -10, True  # Mild penalty for timeout
+            return self.state, -10, True  # episode timeout
         else:
-            return self.state, -1, False  # Step penalty
+            return self.state, -1, False
+

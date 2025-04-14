@@ -40,7 +40,7 @@ def draw_grid_frame(path, grid_size=(4, 4), holes=[(1, 1), (1, 3), (3, 0)], goal
 
     return fig
 
-def save_agent_walk_gif(trajectory, filename="agent_walk.gif", episode=None):
+def save_agent_walk_gif(trajectory, filename="agent_walk.gif", episode=None, loop=True):
     frames = []
     for i in range(1, len(trajectory) + 1):
         fig = draw_grid_frame(trajectory[:i], episode=episode)
@@ -50,7 +50,11 @@ def save_agent_walk_gif(trajectory, filename="agent_walk.gif", episode=None):
         image = image.reshape(fig.canvas.get_width_height()[::-1] + (4,))
         frames.append(image)
         plt.close(fig)
-    imageio.mimsave(filename, frames, duration=0.5)
+    
+    imageio.mimsave(filename, frames, duration=0.5, loop=0 if loop else 1)
+
+
+
 
 def plot_policy(Q, grid_size=4):
     fig, ax = plt.subplots(figsize=(6, 6))
